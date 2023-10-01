@@ -3,6 +3,34 @@
 #include <locale.h>
 #include <stdlib.h>
 
+int utf8towchar(wchar_t *dest, unsigned char *src) {
+    unsigned int wchars_written = 0;
+    while(*src) {
+        if((*src & 0b10000000) == 0) {
+            *dest++ = *src++;
+        } else if((*src & 0b11100000) == 0b11000000) {
+            *dest++ = (((*src & 0b00011111) << 6) |
+                    (*(src + 1) & 0b00111111));
+            src += 2;
+        } else if((*src & 0b11110000) == 0b11100000) {
+            *dest++ = (((*src & 0b00001111) << 12) |
+                    ((*(src + 1) & 0b00111111) << 6) |
+                    (*(src + 2) & 0b00111111));
+            src += 3;
+        } else if((*src & 0b11111000) == 0b11110000) {
+            *dest++ = (((*src & 0b00000111) << 18) |
+                    ((*(src + 1) & 0b00111111) << 12) |
+                    ((*(src + 2) & 0b00111111) << 6) |
+                    (*(src + 3) & 0b00111111));
+            src += 4;
+        } else {
+            return -1;
+        }
+        wchars_written++;
+    }
+    return wchars_written;
+}
+
 int main(int argc, char **argv) {
     setlocale(LC_ALL, "en_US.UTF-8");  // set the locale
 
@@ -23,10 +51,11 @@ int main(int argc, char **argv) {
     char overflow_buf[4];
     unsigned int overflow_buf_len = 0;
     unsigned char *buf_start = buf;
+    //fputws(L"file content:\n", stdout);
     while(1) {
         size_t bytes_read = fread(buf_start, sizeof(char), BUF_SIZE, file);
         if(ferror(file) || bytes_read <= 0) {
-            puts("error reading a file");
+            fputws(L"error reading a file\n", stdout);
             return -1;
         }
 
@@ -59,13 +88,17 @@ int main(int argc, char **argv) {
                 break;
             }
         }
-        unsigned char *buf_temp = buf;
-        size_t wchars_written = mbsrtowcs(dest + dest_length, (const char **)&buf, DEST_SIZE, NULL);
-        buf = buf_temp;
+        int wchars_written = utf8towchar(dest + dest_length, buf);
+        //unsigned char *tmp_buf = buf;
+        //size_t wchars_written = mbsrtowcs(dest + dest_length, (const char **)&buf, DEST_SIZE, NULL);
+        //buf = tmp_buf;
         if(wchars_written == -1) {
+            fputws(L"error converting utf8 to wchar_t\n", stdout);
             return -1;
         }
-        dest_length += wchars_written;
+        dest[wchars_written] = L'\0';
+        fputws(dest, stdout);
+        //dest_length += wchars_written;
         for(int i = overflow_buf_len - 1; i >= 0; i--) {
             buf[overflow_buf_len - 1 - i] = overflow_buf[i];
         }
@@ -77,8 +110,8 @@ int main(int argc, char **argv) {
         }
     }
 
-    fputws(L"file content:\n", stdout);
-    fputws(dest, stdout);
+    //fputws(L"file content:\n", stdout);
+    //fputws(dest, stdout);
     
     free(buf);
     free(dest);
