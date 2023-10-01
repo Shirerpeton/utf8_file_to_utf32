@@ -2,17 +2,9 @@
 #include <wchar.h>
 #include <locale.h>
 #include <stdlib.h>
-
-struct utf8_to_wchar_state {
-    unsigned char *buf;
-    unsigned char overflow_buf[4];
-    unsigned int overflow_buf_len; 
-};
+#include "utf8converter.h"
 
 int utf8_to_wchar(wchar_t *dest, unsigned char *src);
-int get_wchar_chunk(FILE *file, wchar_t *dest, struct utf8_to_wchar_state *state);
-void init_utf8_to_wchar_state(struct utf8_to_wchar_state *state);
-void free_utf8_to_wchar_state(struct utf8_to_wchar_state *state);
 
 const unsigned int BUF_SIZE = 4096; 
 
@@ -52,6 +44,7 @@ int main(int argc, char **argv) {
 }
 
 void init_utf8_to_wchar_state(struct utf8_to_wchar_state *state) {
+    state->overflow_buf_len = 0;
     state->buf = malloc(BUF_SIZE + 1 + 3); // 1 for null teminator + 3 for max overflow from previous chunkmalloc(BUF_SIZE + 1 + 3); // 1 for null teminator + 3 for max overflow from previous chunkmalloc(BUF_SIZE + 1 + 3); // 1 for null teminator + 3 for max overflow from previous chunkmalloc(BUF_SIZE + 1 + 3); // 1 for null teminator + 3 for max overflow from previous chunk
 }
 
