@@ -3,15 +3,19 @@
 #include <locale.h>
 #include <stdlib.h>
 
-int main() {
+int main(int argc, char **argv) {
     setlocale(LC_ALL, "en_US.UTF-8");  // set the locale
 
-    FILE *file = fopen("test2.txt", "r");
-
-    if(!file) {
-        puts("can't open file");
+    if(argc < 2) {
+        puts("pass file name");
+        return 1;
     }
-    const unsigned int BUF_SIZE = 8; 
+    FILE *file = fopen(argv[1], "r");
+    if(!file) {
+        puts("file doesn't exist or you don't have permissions to read it");
+        return 1;
+    } 
+    const unsigned int BUF_SIZE = 4096; 
     unsigned char *buf = malloc(BUF_SIZE + 1 + 3); // 1 for null teminator + 3 for max overflow from previous chunk
     const unsigned int DEST_SIZE = 65535;
     wchar_t *dest = malloc(DEST_SIZE * sizeof(wchar_t));
